@@ -96,6 +96,11 @@ h1 { color: var(--gold); text-shadow: 2px 2px #000; font-size: 2.5rem; margin-bo
     align-items: center;
 }
 
+.answer-btn::first-letter {
+    color: var(--gold);
+    font-weight: bold;
+}
+
 .answer-btn::before { content: "◆"; color: var(--gold); margin-right: 15px; }
 .answer-btn:hover { background: orange; color: black; }
 

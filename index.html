@@ -298,13 +298,18 @@
 
         const container = document.getElementById('answer-buttons');
         container.innerHTML = '';
+
+        // --- UPDATED SECTION: ADDING LETTERS ---
+        const letters = ['A', 'B', 'C', 'D']; 
         qObj.a.forEach((ans, i) => {
             const b = document.createElement('button');
             b.className = 'answer-btn';
-            b.innerText = ans;
+            // Combine the letter with the answer text
+            b.innerText = `${letters[i]}. ${ans}`; 
             b.onclick = () => check(district, qIdx, i, qObj.correct);
             container.appendChild(b);
         });
+        // ---------------------------------------
     }
 
     function exitQuiz() {
