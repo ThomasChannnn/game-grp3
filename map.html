@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Strategy Board</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --sidebar-width: 120px;
+        }
+
+        body { 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            background: var(--bg-color); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Sidebar for Spawning Labels */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 15px;
+            border-right: 2px solid #444;
+            z-index: 100;
+        }
+
+        .spawn-item {
+            width: 80px;
+            padding: 8px 0;
+            text-align: center;
+            border-radius: 4px;
+            cursor: grab;
+            font-weight: bold;
+            color: white;
+            user-select: none;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        /* The Map Area */
+        #viewport {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #map {
+            position: relative;
+            /* Keeps the map a square based on the smaller screen dimension */
+            width: 95vmin;
+            height: 95vmin;
+            background-image: url('https://drive.google.com/thumbnail?id=1Fp6188TEwBXssnmwYVCFMhfDN9z2dZZE&sz=s2000'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background-color: #333;
+        }
+
+        /* Character Styling */
+        .character {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            cursor: move;
+            z-index: 20;
+            /* Outline for transparent PNGs */
+            filter: drop-shadow(0 0 5px gold) drop-shadow(0 0 2px black);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* Draggable Text Labels */
+        .map-label {
+            position: absolute;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: move;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            user-select: none;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            z-index: 30;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .map-label:hover::after {
+            content: '✖';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: black;
+            color: red;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Colors */
+        .red { background: #e74c3c; }
+        .blue { background: #3498db; }
+        .pink { background: #fd79a8; }
+        .green { background: #2ecc71; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div style="color: #888; font-size: 10px; margin-bottom: 10px;">DRAG TO MAP</div>
+    <div class="spawn-item red" data-color="red">RED</div>
+    <div class="spawn-item blue" data-color="blue">BLUE</div>
+    <div class="spawn-item pink" data-color="pink">PINK</div>
+    <div class="spawn-item green" data-color="green">GREEN</div>
+</div>
+
+<div id="viewport">
+    <div id="map">
+        <div class="character" style="top: 10%; left: 10%; background-image: url('https://cdn-icons-png.flaticon.com/512/1041/1041916.png');"></div>
+        <div class="character" style="top: 10%; left: 30%; background-image: url('https://cdn-icons-png.flaticon.com/512/1041/1041916.png');"></div>
+        <div class="character" style="top: 10%; left: 50%; background-image: url('https://cdn-icons-png.flaticon.com/512/1041/1041916.png');"></div>
+        <div class="character" style="top: 10%; left: 70%; background-image: url('https://cdn-icons-png.flaticon.com/512/1041/1041916.png');"></div>
+    </div>
+</div>
+
+<script>
+    let activeElement = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const map = document.getElementById('map');
+
+    // Handle Mousedown for any draggable item
+    document.addEventListener('mousedown', (e) => {
+        // 1. Check if we are spawning a new label from sidebar
+        if (e.target.classList.contains('spawn-item')) {
+            const color = e.target.getAttribute('data-color');
+            createNewLabel(color, e.clientX, e.clientY);
+        }
+
+        // 2. Check if we are clicking a delete button
+        if (e.target.classList.contains('map-label') && e.offsetX > e.target.offsetWidth - 15 && e.offsetY < 15) {
+             e.target.remove();
+             return;
+        }
+
+        // 3. Handle picking up items on the map
+        if (e.target.classList.contains('character') || e.target.classList.contains('map-label')) {
+            activeElement = e.target;
+            const rect = activeElement.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            activeElement.style.zIndex = 1000; // Bring to front while dragging
+        }
+    });
+
+    // Handle Movement
+    document.addEventListener('mousemove', (e) => {
+        if (!activeElement) return;
+
+        const mapRect = map.getBoundingClientRect();
+        
+        // Calculate position relative to the map container
+        let x = e.clientX - mapRect.left - offsetX;
+        let y = e.clientY - mapRect.top - offsetY;
+
+        activeElement.style.left = x + 'px';
+        activeElement.style.top = y + 'px';
+    });
+
+    // Handle Drop
+    document.addEventListener('mouseup', () => {
+        if (activeElement) {
+            activeElement.style.zIndex = activeElement.classList.contains('character') ? 20 : 30;
+            activeElement = null;
+        }
+    });
+
+    function createNewLabel(color, startX, startY) {
+        const label = document.createElement('div');
+        label.className = `map-label ${color}`;
+        label.innerText = color.toUpperCase();
+        
+        const mapRect = map.getBoundingClientRect();
+        label.style.left = (startX - mapRect.left - 40) + 'px';
+        label.style.top = (startY - mapRect.top - 15) + 'px';
+        
+        map.appendChild(label);
+        activeElement = label; // Immediately start dragging the new label
+        offsetX = 40;
+        offsetY = 15;
+    }
+</script>
+
+</body>
+</html>
